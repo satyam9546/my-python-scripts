@@ -408,6 +408,270 @@ def main():
 
 if __name__ == "__main__":
     main()
+---------------------------------exp-2-------------------------------------
+1.Simulate a basic CCS process in Python where one process performs an action (a) and
+transitions to the next state.
+    
+import time
+
+class CCSProcess:
+    def __init__(self, name):
+        self.name = name
+        self.state = "Initial"  # The initial state of the process
+
+    def perform_action(self, action):
+        """Perform the action and transition to the next state."""
+        print(f"{self.name} is performing action: {action}")
+        time.sleep(1)  # Simulate action taking time
+        self.transition_to_next_state()
+
+    def transition_to_next_state(self):
+        """Transition the process to the next state after performing an action."""
+        if self.state == "Initial":
+            self.state = "State1"
+        elif self.state == "State1":
+            self.state = "State2"
+        elif self.state == "State2":
+            self.state = "Final"
+        
+        print(f"{self.name} transitioned to {self.state}")
+    
+    def run(self):
+        """Simulate the process execution."""
+        actions = ['a', 'b', 'c']  # Example actions
+        for action in actions:
+            self.perform_action(action)
+            if self.state == "Final":
+                break  # Stop the process when reaching the final state
+
+
+# Create and run a CCS process
+process = CCSProcess("Process1")
+process.run()
+
+2.Model and simulate a parallel composition of two CCS processes in Python, where both
+processes execute concurrently.
+import threading
+import time
+
+class CCSProcess:
+    def __init__(self, name, actions):
+        self.name = name
+        self.state = "Initial"
+        self.actions = actions  # List of actions for this process
+        self.current_action_index = 0  # To track the current action
+
+    def perform_action(self):
+        """Perform the current action and transition to the next state."""
+        if self.current_action_index < len(self.actions):
+            action = self.actions[self.current_action_index]
+            print(f"{self.name} is performing action: {action}")
+            time.sleep(1)  # Simulate time to perform the action
+            self.transition_to_next_state()
+            self.current_action_index += 1
+        else:
+            print(f"{self.name} has completed all actions.")
+    
+    def transition_to_next_state(self):
+        """Transition the process to the next state after performing an action."""
+        if self.state == "Initial":
+            self.state = "State1"
+        elif self.state == "State1":
+            self.state = "State2"
+        elif self.state == "State2":
+            self.state = "Final"
+        
+        print(f"{self.name} transitioned to {self.state}")
+    
+    def run(self):
+        """Run the process, performing actions and transitioning through states."""
+        while self.current_action_index < len(self.actions):
+            self.perform_action()
+
+
+# Parallel Composition of Two CCS Processes
+def parallel_composition(process1, process2):
+    """
+    Run two processes concurrently, allowing them to perform actions in parallel.
+    If both processes perform the same action, synchronize them.
+    """
+    while process1.current_action_index < len(process1.actions) or process2.current_action_index < len(process2.actions):
+        if process1.current_action_index < len(process1.actions):
+            process1.perform_action()
+        
+        if process2.current_action_index < len(process2.actions):
+            process2.perform_action()
+
+
+# Define two processes with their actions
+process1 = CCSProcess("Process1", actions=["a", "b", "c"])
+process2 = CCSProcess("Process2", actions=["a", "c", "d"])
+
+# Run the parallel composition of both processes
+parallel_composition(process1, process2)
+
+3.Implement Pi-Calculus communication in Python by simulating a sender process that sends a
+message over a channel and a receiver process that receives it.
+import threading
+import queue
+import time
+
+# Sender process: Sends a message over a channel
+def sender(channel):
+    message = "Hello from Sender!"
+    print("Sender: Sending message.")
+    time.sleep(1)  # Simulate some processing time
+    channel.put(message)  # Send the message to the channel
+    print("Sender: Message sent.")
+
+# Receiver process: Receives the message from the channel
+def receiver(channel):
+    print("Receiver: Waiting for message.")
+    message = channel.get()  # Receive the message from the channel
+    print(f"Receiver: Received message: {message}")
+
+# Main function to run the processes
+def main():
+    # Create a queue to act as the communication channel
+    channel = queue.Queue()
+
+    # Create threads for sender and receiver processes
+    sender_thread = threading.Thread(target=sender, args=(channel,))
+    receiver_thread = threading.Thread(target=receiver, args=(channel,))
+
+    # Start the threads
+    sender_thread.start()
+    receiver_thread.start()
+
+    # Wait for both threads to finish
+    sender_thread.join()
+    receiver_thread.join()
+
+    print("Communication complete.")
+
+if __name__ == "__main__":
+    main()
+
+4.Write a Python program to verify synchronization between two CCS processes using
+complementary actions (a and ā).
+
+import threading
+import time
+
+class CCSProcess:
+    def __init__(self, name, action, complement_action, other_process_event):
+        self.name = name
+        self.action = action
+        self.complement_action = complement_action
+        self.event = threading.Event()
+        self.other_process_event = other_process_event
+
+    def perform_action(self):
+        """Perform the action and synchronize with the other process."""
+        print(f"{self.name} is waiting to perform action {self.action}.")
+        self.other_process_event.wait()  # Wait for the other process to be ready
+        print(f"{self.name} performs action {self.action}.")
+        time.sleep(1)  # Simulate time taken to perform the action
+        self.event.set()  # Signal that the action has been performed
+
+    def synchronize(self):
+        """Ensure the complementary action from the other process is performed."""
+        print(f"{self.name} is preparing for synchronization on action {self.complement_action}.")
+        self.other_process_event.set()  # Signal the other process to perform its action
+        self.event.wait()  # Wait for the action from the other process to complete
+        print(f"{self.name} completes synchronization on action {self.complement_action}.")
+
+
+# Main function to run the two processes and verify synchronization
+def main():
+    # Event for synchronizing processes
+    event1 = threading.Event()
+    event2 = threading.Event()
+
+    # Create two processes: P1 (performing action 'a') and P2 (performing action 'ā')
+    process1 = CCSProcess(name="Process 1", action="a", complement_action="ā", other_process_event=event2)
+    process2 = CCSProcess(name="Process 2", action="ā", complement_action="a", other_process_event=event1)
+
+    # Create threads for both processes
+    thread1 = threading.Thread(target=process1.perform_action)
+    thread2 = threading.Thread(target=process2.perform_action)
+
+    # Start the threads
+    thread1.start()
+    thread2.start()
+
+    # Synchronize the processes
+    process1.synchronize()
+    process2.synchronize()
+
+    # Wait for both threads to finish
+    thread1.join()
+    thread2.join()
+
+    print("Both processes have synchronized on complementary actions.")
+
+
+if __name__ == "__main__":
+    main()
+
+5.Simulate a basic producer-consumer system using Python, ensuring mutual exclusion and
+correct handling of shared resources.
+
+    import threading
+import queue
+import time
+
+# Producer process
+def producer(buffer, lock, not_full, not_empty):
+    for i in range(10):  # Produce 10 items
+        item = f"Item-{i + 1}"
+        with lock:  # Ensure mutual exclusion while accessing the buffer
+            while buffer.full():  # Wait if the buffer is full
+                print("Producer: Buffer is full, waiting to produce...")
+                not_full.wait()  # Wait until the consumer consumes an item
+            buffer.put(item)  # Add item to the buffer
+            print(f"Producer: Produced {item}")
+            not_empty.notify()  # Notify the consumer that the buffer is not empty
+        time.sleep(1)  # Simulate time taken to produce an item
+
+# Consumer process
+def consumer(buffer, lock, not_full, not_empty):
+    for _ in range(10):  # Consume 10 items
+        with lock:  # Ensure mutual exclusion while accessing the buffer
+            while buffer.empty():  # Wait if the buffer is empty
+                print("Consumer: Buffer is empty, waiting to consume...")
+                not_empty.wait()  # Wait until the producer produces an item
+            item = buffer.get()  # Remove item from the buffer
+            print(f"Consumer: Consumed {item}")
+            not_full.notify()  # Notify the producer that the buffer is not full
+        time.sleep(2)  # Simulate time taken to consume an item
+
+# Main function to run the producer-consumer simulation
+def main():
+    buffer_size = 5  # Size of the buffer
+    buffer = queue.Queue(buffer_size)
+    
+    # Create lock and condition variables for synchronization
+    lock = threading.Lock()
+    not_full = threading.Condition(lock)
+    not_empty = threading.Condition(lock)
+
+    # Create threads for the producer and consumer
+    producer_thread = threading.Thread(target=producer, args=(buffer, lock, not_full, not_empty))
+    consumer_thread = threading.Thread(target=consumer, args=(buffer, lock, not_full, not_empty))
+
+    # Start the threads
+    producer_thread.start()
+    consumer_thread.start()
+
+    # Wait for both threads to finish
+    producer_thread.join()
+    consumer_thread.join()
+
+    print("Producer-Consumer simulation completed.")
+
+if __name__ == "__main__":
+    main()
 
 
 
