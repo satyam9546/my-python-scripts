@@ -555,3 +555,424 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+-------------------------------exp-4-------------------------------------------
+
+1.Implement a system where two processes communicate using the π-Calculus framework,
+dynamically creating channels and exchanging messages. Ensure that the processes interact
+correctly and handle concurrent execution.
+
+    import threading
+import queue
+import time
+
+# Define Process A: Sends a message and waits for a response
+def process_A(channel_A, channel_B):
+    print("Process A: Creating channel and sending message to Process B")
+    channel_A.put("Hello from Process A")
+    response = channel_B.get()  # Wait for response from Process B
+    print(f"Process A: Received response: {response}")
+    time.sleep(1)
+
+# Define Process B: Waits for message, processes it, and sends a response
+def process_B(channel_A, channel_B):
+    message = channel_A.get()  # Wait for message from Process A
+    print(f"Process B: Received message: {message}")
+    print("Process B: Sending response to Process A")
+    channel_B.put("Hello from Process B")
+    time.sleep(1)
+
+# Function to initialize and run the system
+def main():
+    # Create two channels (queues) for communication
+    channel_A = queue.Queue()
+    channel_B = queue.Queue()
+
+    # Create threads for processes A and B
+    thread_A = threading.Thread(target=process_A, args=(channel_A, channel_B))
+    thread_B = threading.Thread(target=process_B, args=(channel_A, channel_B))
+
+    # Start the processes (threads)
+    thread_A.start()
+    thread_B.start()
+
+    # Wait for both threads to finish
+    thread_A.join()
+    thread_B.join()
+
+    print("Process communication completed.")
+
+if __name__ == "__main__":
+    main()
+
+
+2.Develop a Python program that models a system of three CCS processes executing actions in
+parallel, ensuring synchronization where required. Introduce relabeling and restriction to study
+their impact on process behavior.
+
+import threading
+import queue
+import time
+
+class CCS_Process:
+    def __init__(self, name):
+        self.name = name
+        self.channel = queue.Queue()
+
+    def send(self, action):
+        """Simulate sending an action."""
+        print(f"{self.name}: Sending action {action}")
+        self.channel.put(action)
+
+    def receive(self):
+        """Simulate receiving an action."""
+        action = self.channel.get()
+        print(f"{self.name}: Received action {action}")
+        return action
+
+    def execute(self, action):
+        """Simulate executing an action."""
+        self.send(action)
+        return self.receive()
+
+
+def relabel(action, mapping):
+    """Apply relabeling to change action names."""
+    return mapping.get(action, action)
+
+
+def restrict(actions, restricted_action):
+    """Restrict an action from being performed."""
+    return [action for action in actions if action != restricted_action]
+
+
+def process_P(channel_P, channel_Q, channel_R):
+    """Process P executes actions 'a' and 'b' in parallel."""
+    for _ in range(2):
+        print("Process P: Performing action a")
+        channel_P.put('a')
+        time.sleep(1)  # Simulating some delay before performing the next action
+        print("Process P: Performing action b")
+        channel_P.put('b')
+
+
+def process_Q(channel_P, channel_Q, channel_R):
+    """Process Q executes actions 'a' and 'c' in parallel."""
+    for _ in range(2):
+        print("Process Q: Performing action a")
+        channel_Q.put('a')
+        time.sleep(1)  # Simulating some delay before performing the next action
+        print("Process Q: Performing action c")
+        channel_Q.put('c')
+
+
+def process_R(channel_P, channel_Q, channel_R):
+    """Process R executes actions 'b' and 'c' in parallel."""
+    for _ in range(2):
+        print("Process R: Performing action b")
+        channel_R.put('b')
+        time.sleep(1)  # Simulating some delay before performing the next action
+        print("Process R: Performing action c")
+        channel_R.put('c')
+
+
+def main():
+    # Create channels for synchronization
+    channel_P = queue.Queue()
+    channel_Q = queue.Queue()
+    channel_R = queue.Queue()
+
+    # Create processes
+    P = CCS_Process('P')
+    Q = CCS_Process('Q')
+    R = CCS_Process('R')
+
+    # Start threads for the processes
+    thread_P = threading.Thread(target=process_P, args=(channel_P, channel_Q, channel_R))
+    thread_Q = threading.Thread(target=process_Q, args=(channel_P, channel_Q, channel_R))
+    thread_R = threading.Thread(target=process_R, args=(channel_P, channel_Q, channel_R))
+
+    # Start threads
+    thread_P.start()
+    thread_Q.start()
+    thread_R.start()
+
+    # Wait for threads to finish
+    thread_P.join()
+    thread_Q.join()
+    thread_R.join()
+
+    print("Process execution completed.")
+
+
+if __name__ == "__main__":
+    main()
+
+3.Simulate a process algebra-based load balancer where multiple clients send requests to a central
+dispatcher that distributes tasks among available workers. Verify that requests are handled
+fairly without starvation.
+
+import threading
+import queue
+import time
+
+class Dispatcher:
+    def __init__(self, num_workers):
+        self.task_queue = queue.Queue()  # Queue for storing tasks
+        self.workers = []
+        self.lock = threading.Lock()  # Lock to ensure synchronization
+
+        # Create worker threads
+        for i in range(num_workers):
+            worker = Worker(f"Worker-{i + 1}", self.task_queue)
+            self.workers.append(worker)
+
+    def distribute_task(self, task):
+        """Distribute task to available workers."""
+        self.task_queue.put(task)
+        print(f"Dispatcher: Task {task} added to the queue.")
+
+    def start_workers(self):
+        """Start all worker threads."""
+        for worker in self.workers:
+            worker.start()
+
+    def wait_for_completion(self):
+        """Wait for all tasks to be processed by the workers."""
+        for worker in self.workers:
+            worker.join()
+
+
+class Worker(threading.Thread):
+    def __init__(self, name, task_queue):
+        super().__init__()
+        self.name = name
+        self.task_queue = task_queue
+
+    def run(self):
+        while True:
+            # Get a task from the queue (blocking until a task is available)
+            task = self.task_queue.get()
+            if task == "EXIT":
+                break  # Worker exits when receiving the "EXIT" task
+            print(f"{self.name}: Processing task {task}")
+            time.sleep(2)  # Simulate task processing time
+            print(f"{self.name}: Finished task {task}")
+            self.task_queue.task_done()
+
+
+class Client(threading.Thread):
+    def __init__(self, name, dispatcher, num_tasks):
+        super().__init__()
+        self.name = name
+        self.dispatcher = dispatcher
+        self.num_tasks = num_tasks
+
+    def run(self):
+        for i in range(self.num_tasks):
+            task = f"Task-{i + 1}"
+            print(f"{self.name}: Sending {task} to dispatcher.")
+            self.dispatcher.distribute_task(task)
+            time.sleep(1)  # Simulate time between requests
+
+
+def main():
+    num_workers = 3  # Number of workers
+    dispatcher = Dispatcher(num_workers)
+
+    # Start the workers
+    dispatcher.start_workers()
+
+    # Create clients with varying number of tasks to simulate load balancing
+    client1 = Client("Client-1", dispatcher, 5)
+    client2 = Client("Client-2", dispatcher, 5)
+    client3 = Client("Client-3", dispatcher, 5)
+
+    # Start the client threads
+    client1.start()
+    client2.start()
+    client3.start()
+
+    # Wait for all client threads to finish
+    client1.join()
+    client2.join()
+    client3.join()
+
+    # Wait for all tasks to be processed by the workers
+    dispatcher.task_queue.join()
+
+    # Stop all workers by sending "EXIT" tasks
+    for worker in dispatcher.workers:
+        dispatcher.task_queue.put("EXIT")
+
+    # Wait for workers to finish
+    dispatcher.wait_for_completion()
+
+    print("Load balancing completed. All tasks processed.")
+
+if __name__ == "__main__":
+    main()
+
+4.Implement a Python-based verification system that checks whether two given finite-state
+processes are equivalent using strong bisimulation. The program should take two process
+descriptions as input and determine whether they exhibit the same external behavior.
+
+class StateMachine:
+    def __init__(self, name):
+        self.name = name
+        self.states = set()
+        self.transitions = {}
+        self.initial_state = None
+
+    def add_state(self, state_name, is_initial=False):
+        """Add a state to the state machine."""
+        self.states.add(state_name)
+        if is_initial:
+            self.initial_state = state_name
+        self.transitions[state_name] = []
+
+    def add_transition(self, from_state, action, to_state):
+        """Add a transition from one state to another."""
+        self.transitions[from_state].append((action, to_state))
+
+    def get_transitions(self, state):
+        """Return all transitions for a given state."""
+        return self.transitions[state]
+
+    def get_initial_state(self):
+        """Return the initial state."""
+        return self.initial_state
+
+
+def strong_bisimulation(process1, process2):
+    """
+    Check if two processes are strongly bisimulation equivalent.
+
+    Arguments:
+    - process1: First StateMachine
+    - process2: Second StateMachine
+    """
+    visited = set()
+
+    def bisimulate(state1, state2):
+        if (state1, state2) in visited:
+            return True
+        visited.add((state1, state2))
+
+        transitions1 = process1.get_transitions(state1)
+        transitions2 = process2.get_transitions(state2)
+
+        # Check if both processes have the same actions
+        actions1 = {action for action, _ in transitions1}
+        actions2 = {action for action, _ in transitions2}
+        if actions1 != actions2:
+            return False
+
+        # Check if for each action, both processes can simulate each other's transitions
+        for action in actions1:
+            next_state1 = [to_state for a, to_state in transitions1 if a == action]
+            next_state2 = [to_state for a, to_state in transitions2 if a == action]
+
+            if not next_state1 or not next_state2:
+                continue
+
+            # Check if for each pair of next states, they are bisimulation equivalent
+            for s1 in next_state1:
+                for s2 in next_state2:
+                    if not bisimulate(s1, s2):
+                        return False
+
+        return True
+
+    # Start the bisimulation check from the initial states of both processes
+    return bisimulate(process1.get_initial_state(), process2.get_initial_state())
+
+
+def main():
+    # Create the first process (Process 1)
+    process1 = StateMachine("Process 1")
+    process1.add_state("S0", is_initial=True)
+    process1.add_state("S1")
+    process1.add_state("S2")
+    process1.add_transition("S0", "a", "S1")
+    process1.add_transition("S1", "b", "S2")
+    process1.add_transition("S2", "a", "S0")
+
+    # Create the second process (Process 2)
+    process2 = StateMachine("Process 2")
+    process2.add_state("S0", is_initial=True)
+    process2.add_state("S1")
+    process2.add_state("S2")
+    process2.add_transition("S0", "a", "S1")
+    process2.add_transition("S1", "b", "S2")
+    process2.add_transition("S2", "a", "S0")
+
+    # Check bisimulation equivalence
+    if strong_bisimulation(process1, process2):
+        print("The processes are bisimulation equivalent.")
+    else:
+        print("The processes are not bisimulation equivalent.")
+
+
+if __name__ == "__main__":
+    main()
+
+5.Design a producer-consumer system using CCS principles, ensuring correct message passing
+and proper synchronization between the producer and the consumer while preventing
+deadlocks.
+
+    import threading
+import queue
+import time
+
+# Define the shared buffer (queue)
+buffer_size = 5
+task_queue = queue.Queue(buffer_size)
+
+# Producer process: Produces items and puts them in the shared queue
+def producer():
+    for i in range(10):
+        item = f"Item-{i+1}"
+        task_queue.put(item)  # Add the item to the queue
+        print(f"Producer: Produced {item}")
+        time.sleep(1)  # Simulate time taken to produce an item
+
+# Consumer process: Consumes items from the shared queue
+def consumer():
+    while True:
+        if not task_queue.empty():  # Check if there is anything to consume
+            item = task_queue.get()  # Get an item from the queue
+            print(f"Consumer: Consumed {item}")
+            task_queue.task_done()  # Mark the task as done
+            time.sleep(2)  # Simulate time taken to consume an item
+        else:
+            print("Consumer: Waiting for items to consume...")
+            time.sleep(1)  # Wait for a while before checking the queue again
+
+# Main function to run the producer-consumer system
+def main():
+    # Start the producer and consumer threads
+    producer_thread = threading.Thread(target=producer)
+    consumer_thread = threading.Thread(target=consumer)
+
+    producer_thread.start()
+    consumer_thread.start()
+
+    # Wait for the producer thread to finish
+    producer_thread.join()
+
+    # Wait for all items to be consumed
+    task_queue.join()
+
+    # Stop the consumer thread once all items are processed
+    print("Producer finished producing items.")
+    print("Consumer finished consuming items.")
+
+if __name__ == "__main__":
+    main()
+
