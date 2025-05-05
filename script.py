@@ -1455,3 +1455,1100 @@ if __name__ == "__main__":
     result = strong_fairness(s1, "GF p")
     print(f"Does strong fairness (GF p) hold? {'Yes' if result else 'No'}")
 
+
+
+
+
+
+
+
+
+
+
+-------------------------exp-6------------------------
+1.Model a synchronization problem using Petri Nets and verify deadlock freedom.
+
+    class PetriNet:
+    def __init__(self):
+        self.places = {
+            'P1': 1,  # Process 1 is waiting
+            'P2': 1,  # Process 2 is waiting
+            'Lock': 0  # Lock is initially free
+        }
+        self.transitions = {
+            'T1': self.try_to_acquire_lock,  # Process 1 trying to acquire lock
+            'T2': self.try_to_acquire_lock,  # Process 2 trying to acquire lock
+            'R1': self.release_lock,         # Process 1 releasing lock
+            'R2': self.release_lock          # Process 2 releasing lock
+        }
+    
+    def try_to_acquire_lock(self, process):
+        """Simulate the action of trying to acquire the lock."""
+        if self.places['Lock'] == 0:
+            # Lock is available, acquire it
+            self.places['Lock'] = 1
+            print(f"Process {process} acquired the lock.")
+        else:
+            print(f"Process {process} is waiting for the lock.")
+
+    def release_lock(self, process):
+        """Simulate the action of releasing the lock."""
+        if self.places['Lock'] == 1:
+            # Lock is currently acquired, release it
+            self.places['Lock'] = 0
+            print(f"Process {process} released the lock.")
+        else:
+            print(f"Process {process} has no lock to release.")
+    
+    def fire_transition(self, transition, process):
+        """Fire a transition if possible."""
+        if transition == 'T1' or transition == 'T2':
+            self.transitions[transition](process)
+        elif transition == 'R1' or transition == 'R2':
+            self.transitions[transition](process)
+
+    def check_deadlock(self):
+        """Check for deadlock (no transitions possible)."""
+        if self.places['P1'] == 1 and self.places['P2'] == 1 and self.places['Lock'] == 1:
+            # Both processes are waiting and the lock is held by someone
+            print("Deadlock detected!")
+            return True
+        else:
+            return False
+
+# Simulation of the Petri Net for the synchronization problem
+
+def simulate():
+    petri_net = PetriNet()
+
+    # Process 1 tries to acquire the lock
+    petri_net.fire_transition('T1', 1)
+
+    # Process 2 tries to acquire the lock (deadlock happens if both are waiting)
+    petri_net.fire_transition('T2', 2)
+
+    # Check if there is a deadlock
+    if petri_net.check_deadlock():
+        print("The system is deadlocked.")
+    else:
+        print("The system is not deadlocked.")
+
+    # Process 1 releases the lock
+    petri_net.fire_transition('R1', 1)
+
+    # Now Process 2 should be able to acquire the lock
+    petri_net.fire_transition('T2', 2)
+
+simulate()
+
+
+2.Implement a basic workflow system (e.g., an order processing system) using Petri Nets and
+analyze its correctness.
+
+    import time
+
+class PetriNet:
+    def __init__(self, places, transitions):
+        """
+        Initialize the Petri Net with places and transitions.
+        
+        :param places: A dictionary of places with their initial token counts.
+        :param transitions: A dictionary of transitions with input and output places.
+        """
+        self.places = places
+        self.transitions = transitions
+
+    def get_successors(self, state):
+        """Returns the set of states reachable from the given state."""
+        return self.transitions.get(state, [])
+
+    def can_fire_transition(self, inputs):
+        """Check if a transition can fire based on the tokens in input places."""
+        for place in inputs:
+            if self.places[place] <= 0:
+                return False  # If any input place has no tokens, the transition cannot fire
+        return True
+
+    def fire_transition(self, transition):
+        """Fire a transition, updating tokens in the places."""
+        inputs, outputs = self.transitions[transition]
+        
+        # Check if transition can fire
+        if self.can_fire_transition(inputs):
+            # Move tokens: consume from input places, produce in output places
+            for place in inputs:
+                self.places[place] -= 1
+            for place in outputs:
+                self.places[place] += 1
+            print(f"Transition {transition} fired.")
+        else:
+            print(f"Transition {transition} cannot fire (deadlock detected).")
+
+    def display_state(self):
+        """Display the current state of the Petri net (token counts in places)."""
+        print(f"Current state: {self.places}")
+
+
+def main():
+    # Define places and their initial token counts
+    places = {
+        'Order Received': 1,  # Initial token: Order is received
+        'Order Processed': 0,  # Initially, the order is not processed
+        'Order Shipped': 0,  # Initially, the order is not shipped
+        'Order Completed': 0  # Initially, the order is not completed
+    }
+
+    # Define transitions with input and output places
+    transitions = {
+        'Process Order': (['Order Received'], ['Order Processed']),
+        'Ship Order': (['Order Processed'], ['Order Shipped']),
+        'Complete Order': (['Order Shipped'], ['Order Completed'])
+    }
+
+    # Create the Petri Net (Order processing workflow)
+    petri_net = PetriNet(places, transitions)
+
+    # Display initial state
+    petri_net.display_state()
+
+    # Fire transitions (simulate the order processing)
+    petri_net.fire_transition('Process Order')
+    petri_net.fire_transition('Ship Order')
+    petri_net.fire_transition('Complete Order')
+
+    # Display the final state
+    petri_net.display_state()
+
+if __name__ == "__main__":
+    main()
+
+3.Simulate a client-server communication model using CCS (Calculus of Communicating
+Systems).
+
+import threading
+import time
+
+# Shared resources for communication
+request_event = threading.Event()
+response_event = threading.Event()
+
+def client():
+    while True:
+        # Client sends request
+        print("Client: Sending request...")
+        request_event.set()  # Signal server to process
+        time.sleep(1)  # Simulate some processing time
+        response_event.wait()  # Wait for the server response
+        print("Client: Received response.")
+        response_event.clear()  # Reset the event for the next round
+        time.sleep(1)  # Simulate time before sending the next request
+
+def server():
+    while True:
+        request_event.wait()  # Wait for the client to send a request
+        print("Server: Processing request...")
+        time.sleep(2)  # Simulate processing time
+        response_event.set()  # Send response back to client
+        print("Server: Response sent.")
+        request_event.clear()  # Reset the event for the next round
+
+# Create client and server threads
+client_thread = threading.Thread(target=client)
+server_thread = threading.Thread(target=server)
+
+# Start the threads
+client_thread.start()
+server_thread.start()
+
+# Wait for the threads to finish (this will run indefinitely)
+client_thread.join()
+server_thread.join()
+
+
+4.Develop a formal specification of an online transaction processing system using Process
+Algebra.
+
+import threading
+import time
+
+# Shared events for communication
+payment_event = threading.Event()      # To synchronize payment processing
+inventory_event = threading.Event()    # To synchronize inventory check
+order_event = threading.Event()        # To synchronize order confirmation
+
+class Customer:
+    def __init__(self):
+        self.name = "Customer"
+    
+    def initiate_transaction(self):
+        """Customer initiates the transaction and waits for payment to be processed."""
+        print(f"{self.name}: Initiating transaction...")
+        time.sleep(1)  # Simulate time for transaction initiation
+        payment_event.set()  # Signal payment processor to validate payment
+        print(f"{self.name}: Waiting for payment response...")
+        payment_event.wait()  # Wait for payment to be processed
+        print(f"{self.name}: Payment processed, confirming order...")
+        order_event.set()  # Signal order management to confirm the order
+
+
+class PaymentProcessor:
+    def __init__(self):
+        self.name = "Payment Processor"
+    
+    def validate_payment(self):
+        """Payment Processor validates the payment and signals back to Customer."""
+        payment_event.wait()  # Wait for customer to initiate payment
+        print(f"{self.name}: Validating payment...")
+        time.sleep(2)  # Simulate payment validation time
+        print(f"{self.name}: Payment validated.")
+        payment_event.clear()  # Clear the event so the customer can proceed
+        inventory_event.set()  # Signal inventory system to check availability
+
+
+class InventorySystem:
+    def __init__(self):
+        self.name = "Inventory System"
+    
+    def check_availability(self):
+        """Inventory system checks if the product is available."""
+        inventory_event.wait()  # Wait for payment to be validated
+        print(f"{self.name}: Checking product availability...")
+        time.sleep(1)  # Simulate inventory check time
+        print(f"{self.name}: Product available.")
+        inventory_event.clear()  # Clear the event so order management can proceed
+        order_event.set()  # Signal order management to confirm the order
+
+
+class OrderManagement:
+    def __init__(self):
+        self.name = "Order Management"
+    
+    def confirm_order(self):
+        """Order Management confirms the order and ships the product."""
+        order_event.wait()  # Wait for inventory system to confirm availability
+        print(f"{self.name}: Confirming order and arranging shipment...")
+        time.sleep(2)  # Simulate order confirmation and shipment time
+        print(f"{self.name}: Order confirmed and shipped!")
+
+
+# Create instances of the system components
+customer = Customer()
+payment_processor = PaymentProcessor()
+inventory_system = InventorySystem()
+order_management = OrderManagement()
+
+# Create threads for each process
+customer_thread = threading.Thread(target=customer.initiate_transaction)
+payment_processor_thread = threading.Thread(target=payment_processor.validate_payment)
+inventory_system_thread = threading.Thread(target=inventory_system.check_availability)
+order_management_thread = threading.Thread(target=order_management.confirm_order)
+
+# Start the threads
+customer_thread.start()
+payment_processor_thread.start()
+inventory_system_thread.start()
+order_management_thread.start()
+
+# Wait for all threads to finish
+customer_thread.join()
+payment_processor_thread.join()
+inventory_system_thread.join()
+order_management_thread.join()
+
+print("Transaction processing completed.")
+
+5 . Implement a distributed computation model using Pi-Calculus for mobile process interactions.
+                                                               
+import threading
+import queue
+import time
+
+# Process P: Creates a channel and passes it to Process Q
+def process_P(channel_Q):
+    print("Process P: Creating channel and passing it to Process Q")
+    # Simulate passing the channel to Process Q
+    channel_P_to_Q = queue.Queue()  # New channel for communication
+    channel_Q.put(channel_P_to_Q)  # Pass the channel to Q
+
+    # Process P sends a message to Q via the new channel
+    time.sleep(1)  # Wait before sending the message
+    print("Process P: Sending message to Process Q via new channel")
+    channel_P_to_Q.put("Hello from P")
+
+    # Process P waits for a response from Q
+    response = channel_P_to_Q.get()
+    print(f"Process P: Received response: {response}")
+
+# Process Q: Receives the channel and communicates with Process P
+def process_Q(channel_Q):
+    # Receive the channel from Process P
+    channel_P_to_Q = channel_Q.get()
+    print("Process Q: Received channel from Process P")
+
+    # Process Q receives the message from Process P
+    message = channel_P_to_Q.get()
+    print(f"Process Q: Received message: {message}")
+
+    # Process Q sends a response back to Process P
+    time.sleep(1)  # Simulate processing time
+    print("Process Q: Sending response back to Process P")
+    channel_P_to_Q.put("Hello from Q")
+
+# Main function to simulate the distributed computation
+def main():
+    # Create a queue for passing the channel
+    channel_Q = queue.Queue()
+
+    # Create and start threads for Process P and Process Q
+    thread_P = threading.Thread(target=process_P, args=(channel_Q,))
+    thread_Q = threading.Thread(target=process_Q, args=(channel_Q,))
+
+    thread_P.start()
+    thread_Q.start()
+
+    # Wait for the processes to finish
+    thread_P.join()
+    thread_Q.join()
+
+    print("Distributed computation completed.")
+
+if __name__ == "__main__":
+    main()
+
+------------------------exp-8--------------------
+1.Implement a Deterministic Finite Automaton (DFA) in Python and verify its language
+acceptance properties.
+
+class DFA:
+    def __init__(self, start_state, accept_states, transitions):
+        self.start_state = start_state
+        self.accept_states = accept_states
+        self.transitions = transitions
+        self.current_state = start_state
+
+    def reset(self):
+        """Reset the DFA to the initial state."""
+        self.current_state = self.start_state
+
+    def transition(self, symbol):
+        """Transition to the next state based on the current state and input symbol."""
+        self.current_state = self.transitions.get((self.current_state, symbol), None)
+
+    def accepts(self, string):
+        """Check if the DFA accepts the given string."""
+        self.reset()
+        for symbol in string:
+            self.transition(symbol)
+            if self.current_state is None:
+                return False  # Invalid transition
+        return self.current_state in self.accept_states
+
+# Define the DFA for strings ending with '01'
+# States: q0 (initial), q1, q2 (accepting)
+start_state = 'q0'
+accept_states = {'q2'}
+
+# Transitions: (current_state, symbol) -> next_state
+transitions = {
+    ('q0', '0'): 'q0',
+    ('q0', '1'): 'q1',
+    ('q1', '0'): 'q0',
+    ('q1', '1'): 'q2',
+    ('q2', '0'): 'q0',
+    ('q2', '1'): 'q1',
+}
+
+# Create DFA instance
+dfa = DFA(start_state, accept_states, transitions)
+
+# Function to test the DFA
+def test_dfa(dfa, test_strings):
+    for test_str in test_strings:
+        result = "Accepted" if dfa.accepts(test_str) else "Rejected"
+        print(f"String '{test_str}': {result}")
+
+# Test the DFA with a list of strings
+test_strings = ['0101', '110', '101', '011', '1001', '111']
+test_dfa(dfa, test_strings)
+
+2.  Develop a simulation tool for Nondeterministic Finite Automata (NFA) and check equivalence
+with a DFA.
+
+from collections import deque
+from itertools import product
+
+class NFA:
+    def __init__(self, states, alphabet, transitions, initial_state, final_states):
+        """
+        Initialize the NFA.
+        
+        Parameters:
+        - states: set of states
+        - alphabet: set of input symbols (excluding epsilon)
+        - transitions: dictionary where keys are (state, symbol) and values are sets of states
+        - initial_state: the initial state
+        - final_states: set of accepting states
+        """
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.initial_state = initial_state
+        self.final_states = final_states
+        self.epsilon = 'ε'  # representing epsilon transitions
+        
+    def epsilon_closure(self, states):
+        """
+        Compute the epsilon closure for a set of states.
+        """
+        closure = set(states)
+        queue = deque(states)
+        
+        while queue:
+            state = queue.popleft()
+            # Check for epsilon transitions
+            if (state, self.epsilon) in self.transitions:
+                for next_state in self.transitions[(state, self.epsilon)]:
+                    if next_state not in closure:
+                        closure.add(next_state)
+                        queue.append(next_state)
+        return frozenset(closure)
+    
+    def move(self, states, symbol):
+        """
+        Move from a set of states on a given symbol.
+        """
+        result = set()
+        for state in states:
+            if (state, symbol) in self.transitions:
+                result.update(self.transitions[(state, symbol)])
+        return frozenset(result)
+    
+    def simulate(self, input_string):
+        """
+        Simulate the NFA on an input string.
+        Returns True if accepted, False otherwise.
+        """
+        current_states = self.epsilon_closure({self.initial_state})
+        
+        for symbol in input_string:
+            if symbol not in self.alphabet:
+                raise ValueError(f"Symbol '{symbol}' not in alphabet")
+            current_states = self.epsilon_closure(self.move(current_states, symbol))
+        
+        return any(state in self.final_states for state in current_states)
+
+class DFA:
+    def __init__(self, states, alphabet, transitions, initial_state, final_states):
+        """
+        Initialize the DFA.
+        
+        Parameters:
+        - states: set of states
+        - alphabet: set of input symbols
+        - transitions: dictionary where keys are (state, symbol) and values are single states
+        - initial_state: the initial state
+        - final_states: set of accepting states
+        """
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.initial_state = initial_state
+        self.final_states = final_states
+    
+    def simulate(self, input_string):
+        """
+        Simulate the DFA on an input string.
+        Returns True if accepted, False otherwise.
+        """
+        current_state = self.initial_state
+        
+        for symbol in input_string:
+            if symbol not in self.alphabet:
+                raise ValueError(f"Symbol '{symbol}' not in alphabet")
+            current_state = self.transitions[(current_state, symbol)]
+        
+        return current_state in self.final_states
+
+def nfa_to_dfa(nfa):
+    """
+    Convert an NFA to an equivalent DFA using subset construction.
+    """
+    dfa_states = set()
+    dfa_transitions = {}
+    dfa_initial_state = nfa.epsilon_closure({nfa.initial_state})
+    dfa_final_states = set()
+    
+    unprocessed_states = deque()
+    unprocessed_states.append(dfa_initial_state)
+    dfa_states.add(dfa_initial_state)
+    
+    # Check if initial state is final
+    if any(state in nfa.final_states for state in dfa_initial_state):
+        dfa_final_states.add(dfa_initial_state)
+    
+    while unprocessed_states:
+        current_dfa_state = unprocessed_states.popleft()
+        
+        for symbol in nfa.alphabet:
+            # Compute the next state
+            next_nfa_states = nfa.move(current_dfa_state, symbol)
+            next_dfa_state = nfa.epsilon_closure(next_nfa_states)
+            
+            if not next_dfa_state:  # empty set - dead state
+                continue
+                
+            # Add transition
+            dfa_transitions[(current_dfa_state, symbol)] = next_dfa_state
+            
+            # If new state, add to queue and states set
+            if next_dfa_state not in dfa_states:
+                dfa_states.add(next_dfa_state)
+                unprocessed_states.append(next_dfa_state)
+                
+                # Check if it's a final state
+                if any(state in nfa.final_states for state in next_dfa_state):
+                    dfa_final_states.add(next_dfa_state)
+    
+    # Add dead state transitions if needed
+    dead_state = frozenset()
+    need_dead_state = False
+    
+    for state in dfa_states:
+        for symbol in nfa.alphabet:
+            if (state, symbol) not in dfa_transitions:
+                need_dead_state = True
+                dfa_transitions[(state, symbol)] = dead_state
+    
+    if need_dead_state:
+        dfa_states.add(dead_state)
+        for symbol in nfa.alphabet:
+            dfa_transitions[(dead_state, symbol)] = dead_state
+    
+    return DFA(
+        states=dfa_states,
+        alphabet=nfa.alphabet,
+        transitions=dfa_transitions,
+        initial_state=dfa_initial_state,
+        final_states=dfa_final_states
+    )
+
+def are_equivalent(fa1, fa2, max_length=10):
+    """
+    Check if two finite automata (NFA or DFA) are equivalent by testing strings up to max_length.
+    This is a practical approach but not complete for all cases.
+    """
+    from itertools import product
+    
+    # Generate all possible strings up to max_length
+    for length in range(max_length + 1):
+        for test_string in product(fa1.alphabet, repeat=length):
+            test_str = ''.join(test_string)
+            result1 = fa1.simulate(test_str)
+            result2 = fa2.simulate(test_str)
+            if result1 != result2:
+                print(f"Difference found on string: '{test_str}'")
+                print(f"FA1: {'Accepts' if result1 else 'Rejects'}")
+                print(f"FA2: {'Accepts' if result2 else 'Rejects'}")
+                return False
+    return True
+
+# Example usage
+if __name__ == "__main__":
+    # Example NFA that accepts strings ending with '01'
+    nfa = NFA(
+        states={'q0', 'q1', 'q2'},
+        alphabet={'0', '1'},
+        transitions={
+            ('q0', '0'): {'q0', 'q1'},
+            ('q0', '1'): {'q0'},
+            ('q1', '0'): set(),
+            ('q1', '1'): {'q2'},
+            ('q2', '0'): set(),
+            ('q2', '1'): set(),
+        },
+        initial_state='q0',
+        final_states={'q2'}
+    )
+    
+    # Convert NFA to DFA
+    dfa = nfa_to_dfa(nfa)
+    
+    # Test some strings
+    test_strings = ['01', '101', '001', '1001', '1010', '11011', '000']
+    print("Testing NFA and converted DFA:")
+    for test_str in test_strings:
+        nfa_result = nfa.simulate(test_str)
+        dfa_result = dfa.simulate(test_str)
+        print(f"String '{test_str}': NFA {'accepts' if nfa_result else 'rejects'}, DFA {'accepts' if dfa_result else 'rejects'}")
+    
+    # Check equivalence
+    print("\nChecking equivalence between NFA and DFA:")
+    if are_equivalent(nfa, dfa):
+        print("The NFA and DFA are equivalent (for all tested strings)")
+    else:
+        print("The NFA and DFA are not equivalent")
+    
+    # Create another DFA that accepts the same language
+    dfa2 = DFA(
+        states={'A', 'B', 'C', 'D'},
+        alphabet={'0', '1'},
+        transitions={
+            ('A', '0'): 'B',
+            ('A', '1'): 'A',
+            ('B', '0'): 'B',
+            ('B', '1'): 'C',
+            ('C', '0'): 'B',
+            ('C', '1'): 'A',
+            ('D', '0'): 'D',
+            ('D', '1'): 'D',
+        },
+        initial_state='A',
+        final_states={'C'}
+    )
+    
+    print("\nChecking equivalence between converted DFA and another DFA:")
+    if are_equivalent(dfa, dfa2):
+        print("The two DFAs are equivalent (for all tested strings)")
+    else:
+        print("The two DFAs are not equivalent")
+
+
+3.Write a Python-based tool to transform a regular expression into an equivalent automaton.
+
+
+
+
+
+4.Model and analyze a simple text parser using formal grammar and automata theory.
+
+class DFA:
+    def __init__(self, start_state, accept_states, transition_function):
+        self.start_state = start_state
+        self.accept_states = accept_states
+        self.transition_function = transition_function
+    
+    def accepts(self, input_string):
+        current_state = self.start_state
+        for symbol in input_string:
+            if (current_state, symbol) in self.transition_function:
+                current_state = self.transition_function[(current_state, symbol)]
+            else:
+                return False  # If no valid transition exists, reject the input
+        return current_state in self.accept_states
+
+
+# Define the DFA for alternating 'a' and 'b'
+start_state = 'q0'
+accept_states = {'q0', 'q1'}
+transition_function = {
+    ('q0', 'a'): 'q1',  # From q0, on 'a', go to q1
+    ('q1', 'b'): 'q0',  # From q1, on 'b', go to q0
+}
+
+# Create DFA instance
+dfa = DFA(start_state, accept_states, transition_function)
+
+# Test the DFA with valid and invalid strings
+test_strings = ['ab', 'abab', 'ababab', 'a', 'ba', 'abb', 'aabb']
+
+print("DFA Acceptance:")
+for test_str in test_strings:
+    result = "Accepted" if dfa.accepts(test_str) else "Rejected"
+    print(f"String '{test_str}': {result}")
+
+
+5.Implement Minimization of Finite State Machines (FSMs) and verify equivalence between two
+FSMs.
+
+class FSM:
+    def __init__(self, states, alphabet, transition_function, start_state, accept_states):
+        """
+        Initialize the FSM.
+        
+        :param states: Set of states
+        :param alphabet: Set of input symbols (alphabet)
+        :param transition_function: Dictionary representing the transition function {state: {symbol: next_state}}
+        :param start_state: The initial state
+        :param accept_states: Set of accepting states
+        """
+        self.states = states
+        self.alphabet = alphabet
+        self.transition_function = transition_function
+        self.start_state = start_state
+        self.accept_states = accept_states
+
+    def get_transitions(self, state, symbol):
+        """Returns the next state for a given state and symbol."""
+        return self.transition_function.get(state, {}).get(symbol)
+
+    def simulate(self, input_string):
+        """Simulate the FSM on the input string."""
+        current_state = self.start_state
+        for symbol in input_string:
+            current_state = self.get_transitions(current_state, symbol)
+        return current_state in self.accept_states
+
+
+def minimize_fsm(fsm):
+    """
+    Minimize the FSM using partition refinement.
+    
+    :param fsm: The FSM to minimize
+    :return: The minimized FSM
+    """
+    # Step 1: Initial partition: divide states into accepting and non-accepting states
+    partition = {frozenset(fsm.accept_states), frozenset(fsm.states - fsm.accept_states)}
+
+    # Step 2: Refinement of partitions based on transition behavior
+    stable = False
+    while not stable:
+        stable = True
+        new_partition = set()
+        
+        for part in partition:
+            # Group states by transitions for each symbol in the alphabet
+            grouped = {}
+            for state in part:
+                key = tuple(fsm.get_transitions(state, symbol) for symbol in fsm.alphabet)
+                if key not in grouped:
+                    grouped[key] = set()
+                grouped[key].add(state)
+
+            # If any group has more than one state, we split the partition
+            for group in grouped.values():
+                new_partition.add(frozenset(group))
+
+        if partition != new_partition:
+            partition = new_partition
+            stable = False
+
+    # Step 3: Create a new FSM based on the minimized partition
+    state_mapping = {}
+    for i, part in enumerate(partition):
+        new_state = f'q{i}'
+        for state in part:
+            state_mapping[state] = new_state
+
+    new_transitions = {}
+    for part in partition:
+        representative = next(iter(part))
+        new_state = state_mapping[representative]
+        new_transitions[new_state] = {}
+        for symbol in fsm.alphabet:
+            next_state = fsm.get_transitions(representative, symbol)
+            new_transitions[new_state][symbol] = state_mapping.get(next_state)
+
+    # The start state of the minimized FSM is the state that corresponds to the start state of the original FSM
+    start_state = state_mapping[fsm.start_state]
+
+    # The accept states of the minimized FSM are those that correspond to any accepting state of the original FSM
+    accept_states = {state_mapping[state] for state in fsm.accept_states}
+
+    return FSM(set(state_mapping.values()), fsm.alphabet, new_transitions, start_state, accept_states)
+
+
+def check_equivalence(fsm1, fsm2):
+    """
+    Check if two FSMs are equivalent by comparing their behavior.
+    
+    :param fsm1: The first FSM
+    :param fsm2: The second FSM
+    :return: True if the FSMs are equivalent, False otherwise
+    """
+    # Check equivalence for a set of test strings
+    test_strings = ["0101", "111", "0011", "101010", "111000"]
+    for test_str in test_strings:
+        fsm1_result = fsm1.simulate(test_str)
+        fsm2_result = fsm2.simulate(test_str)
+        if fsm1_result != fsm2_result:
+            print(f"Mismatch for string '{test_str}': FSM1 result {fsm1_result}, FSM2 result {fsm2_result}")
+            return False
+    return True
+
+
+def main():
+    # Define FSM1 (example: accepting strings with an even number of 1s)
+    states1 = {'q0', 'q1'}
+    alphabet1 = {'0', '1'}
+    transition_function1 = {
+        'q0': {'0': 'q0', '1': 'q1'},
+        'q1': {'0': 'q1', '1': 'q0'}
+    }
+    start_state1 = 'q0'
+    accept_states1 = {'q0'}
+
+    fsm1 = FSM(states1, alphabet1, transition_function1, start_state1, accept_states1)
+
+    # Define FSM2 (example: accepting strings that end with 1)
+    states2 = {'p0', 'p1'}
+    alphabet2 = {'0', '1'}
+    transition_function2 = {
+        'p0': {'0': 'p0', '1': 'p1'},
+        'p1': {'0': 'p0', '1': 'p1'}
+    }
+    start_state2 = 'p0'
+    accept_states2 = {'p1'}
+
+    fsm2 = FSM(states2, alphabet2, transition_function2, start_state2, accept_states2)
+
+    # Minimize FSM1
+    minimized_fsm1 = minimize_fsm(fsm1)
+
+    # Minimize FSM2
+    minimized_fsm2 = minimize_fsm(fsm2)
+
+    # Check equivalence between the two FSMs
+    if check_equivalence(minimized_fsm1, minimized_fsm2):
+        print("FSM1 and FSM2 are equivalent.")
+    else:
+        print("FSM1 and FSM2 are not equivalent.")
+
+
+if __name__ == "__main__":
+    main()
+
+
+--------------------exp-09------------------------------
+1.Use model checking to verify the correctness of a topological sorting algorithm.
+
+from collections import deque, defaultdict
+
+class TopologicalSortChecker:
+    def __init__(self, graph):
+        """
+        Initialize the topological sort checker with a directed graph.
+        
+        :param graph: Dictionary representing the adjacency list of the directed graph
+        """
+        self.graph = graph
+        self.indegree = defaultdict(int)
+        self.sorted_order = []
+
+    def topological_sort(self):
+        """
+        Perform topological sorting (using Kahn's Algorithm).
+        """
+        # Step 1: Calculate in-degree (number of incoming edges) for each node
+        for node in self.graph:
+            if node not in self.indegree:
+                self.indegree[node] = 0  # In case of isolated nodes
+            for neighbor in self.graph[node]:
+                self.indegree[neighbor] += 1
+
+        # Step 2: Use a queue to store nodes with no incoming edges (in-degree 0)
+        queue = deque([node for node in self.graph if self.indegree[node] == 0])
+
+        # Step 3: Perform the topological sort
+        while queue:
+            node = queue.popleft()
+            self.sorted_order.append(node)
+            for neighbor in self.graph[node]:
+                self.indegree[neighbor] -= 1
+                if self.indegree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        # Check if there was a cycle (i.e., if the sorted order doesn't contain all nodes)
+        if len(self.sorted_order) != len(self.graph):
+            return False  # The graph has a cycle, topological sort is not possible
+        return True
+
+    def check_property_1(self):
+        """
+        Property 1: Ensure that for every edge u -> v, u appears before v in the sorted order.
+        """
+        for u in self.graph:
+            u_index = self.sorted_order.index(u)
+            for v in self.graph[u]:
+                v_index = self.sorted_order.index(v)
+                if u_index > v_index:
+                    return False  # u appears after v, violating the topological sort property
+        return True
+
+    def check_property_2(self):
+        """
+        Property 2: Ensure that all nodes appear exactly once in the sorted order.
+        """
+        return len(set(self.sorted_order)) == len(self.graph)  # No duplicate nodes in sorted order
+
+
+def main():
+    # Example directed graph (DAG)
+    graph = {
+        'A': ['B', 'C'],
+        'B': ['D'],
+        'C': ['D'],
+        'D': []
+    }
+
+    # Initialize topological sort checker
+    checker = TopologicalSortChecker(graph)
+
+    # Perform the topological sort
+    if checker.topological_sort():
+        print("Topological Sort is possible.")
+        print("Sorted Order:", checker.sorted_order)
+        
+        # Check properties
+        if checker.check_property_1():
+            print("Property 1 (Correctness): The topological sort respects the edges.")
+        else:
+            print("Property 1 (Correctness): The topological sort does not respect the edges.")
+        
+        if checker.check_property_2():
+            print("Property 2 (Correctness): All nodes appear exactly once in the sorted order.")
+        else:
+            print("Property 2 (Correctness): There is a duplicate node in the sorted order.")
+    else:
+        print("Topological Sort is not possible (cycle detected).")
+
+if __name__ == "__main__":
+    main()
+
+
+2.Develop a proof of correctness for binary search algorithm using Hoare Logic.
+# Binary Search Algorithm
+
+def binary_search(arr, target):
+    low = 0
+    high = len(arr) - 1
+    
+    while low <= high:
+        mid = (low + high) // 2
+        
+        if arr[mid] == target:
+            return mid  # Target found
+        elif arr[mid] < target:
+            low = mid + 1  # Eliminate the left half
+        else:
+            high = mid - 1  # Eliminate the right half
+    
+    return -1  # Target not found
+
+
+# Proof of Correctness for Binary Search Algorithm using Hoare Logic
+
+def prove_binary_search_correctness():
+    # Test Case 1: Target exists in the array
+    arr1 = [1, 2, 3, 4, 5]
+    target1 = 3
+    result1 = binary_search(arr1, target1)
+    print(f"Searching for {target1} in {arr1}... Result: {result1}")
+
+    # Test Case 2: Target does not exist in the array
+    arr2 = [1, 2, 3, 4, 5]
+    target2 = 6
+    result2 = binary_search(arr2, target2)
+    print(f"Searching for {target2} in {arr2}... Result: {result2}")
+
+
+# Run the proof of correctness for binary search
+prove_binary_search_correctness()
+
+3.Implement formal verification of loop invariants for fixed point iterative algorithms.
+
+def fixed_point_iteration(f, x0, tolerance=1e-6, max_iterations=1000):
+    x_n = x0
+    for _ in range(max_iterations):
+        x_next = f(x_n)
+        if abs(x_next - x_n) < tolerance:
+            return x_next  # Fixed point found
+        x_n = x_next
+    return None  # Convergence not reached within max iterations
+
+# Example function: f(x) = cos(x)
+import math
+def f(x):
+    return math.cos(x)
+
+# Initial guess
+x0 = 0.5
+result = fixed_point_iteration(f, x0)
+print("Fixed point:", result)
+
+
+4.Develop a formal specification for a job scheduling system and verify correctness.
+
+    import heapq
+import threading
+import time
+
+class Job:
+    def __init__(self, job_id, duration, priority):
+        self.job_id = job_id
+        self.duration = duration
+        self.priority = priority
+
+    def __lt__(self, other):
+        # Compare jobs based on priority (and duration as a tiebreaker)
+        if self.priority == other.priority:
+            return self.duration < other.duration
+        return self.priority > other.priority
+
+
+class Resource:
+    def __init__(self, resource_id):
+        self.resource_id = resource_id
+        self.available = True
+
+    def allocate(self, job):
+        self.available = False
+        print(f"Resource {self.resource_id} is allocated to Job {job.job_id}")
+        time.sleep(job.duration)
+        self.release(job)
+
+    def release(self, job):
+        self.available = True
+        print(f"Resource {self.resource_id} has completed Job {job.job_id}")
+
+
+class JobScheduler:
+    def __init__(self):
+        self.jobs_queue = []
+        self.resources = []
+
+    def add_resource(self, resource):
+        self.resources.append(resource)
+
+    def add_job(self, job):
+        heapq.heappush(self.jobs_queue, job)
+
+    def schedule_jobs(self):
+        while self.jobs_queue:
+            # Get the job with the highest priority
+            job = heapq.heappop(self.jobs_queue)
+            allocated = False
+
+            for resource in self.resources:
+                if resource.available:
+                    threading.Thread(target=resource.allocate, args=(job,)).start()
+                    allocated = True
+                    break
+
+            if not allocated:
+                print(f"Job {job.job_id} is waiting for an available resource.")
+                time.sleep(1)  # Wait for a resource to become available
+
+
+# Create a JobScheduler and Resources
+scheduler = JobScheduler()
+scheduler.add_resource(Resource("R1"))
+scheduler.add_resource(Resource("R2"))
+
+# Create some jobs with priority and duration
+job1 = Job("J1", 3, 1)  # Job J1 with 3 units of time and priority 1
+job2 = Job("J2", 5, 2)  # Job J2 with 5 units of time and priority 2
+job3 = Job("J3", 2, 1)  # Job J3 with 2 units of time and priority 1
+job4 = Job("J4", 4, 3)  # Job J4 with 4 units of time and priority 3
+
+# Add jobs to the scheduler
+scheduler.add_job(job1)
+scheduler.add_job(job2)
+scheduler.add_job(job3)
+scheduler.add_job(job4)
+
+# Schedule jobs
+scheduler.schedule_jobs()
+
+
+
+                                                               
