@@ -1,3 +1,160 @@
+
+Lab 1: Introduction to Formal Methods Tools
+
+Question: Simulate a vending machine using Python.
+
+!pip install simpy
+import simpy
+
+def vending_machine(env):
+    print(f"Vending Machine Ready at {env.now}")
+    while True:
+        print(f"Waiting for Customer at {env.now}")
+        yield env.timeout(5)  # Time until next customer
+        print(f"Serving Customer at {env.now}")
+
+# Run the simulation
+env = simpy.Environment()
+env.process(vending_machine(env))
+env.run(until=20)  # Run the simulation for 20 time units
+
+Lab 2: Modeling Systems with CCS
+
+Question: Simulate producer-consumer system using CCS.
+import simpy
+
+def producer(env, buffer):
+    while True:
+        yield env.timeout(1)  # Time to produce
+        buffer.append(1)
+        print(f"Produced an item at {env.now}, Buffer: {len(buffer)}")
+
+def consumer(env, buffer):
+    while True:
+        if buffer:
+            buffer.pop(0)
+            print(f"Consumed an item at {env.now}, Buffer: {len(buffer)}")
+        yield env.timeout(2)  # Time to consume
+
+# Run the simulation
+env = simpy.Environment()
+buffer = []
+env.process(producer(env, buffer))
+env.process(consumer(env, buffer))
+env.run(until=10)
+Lab 3: Pi-Calculus and Dynamic Systems
+
+Question: Model a client-server system using Pi-Calculus.
+
+def client_server(env):
+    print(f"Client sends request at {env.now}")
+    yield env.timeout(1)
+    print(f"Server processes request at {env.now}")
+    yield env.timeout(2)
+    print(f"Server sends response at {env.now}")
+
+env = simpy.Environment()
+env.process(client_server(env))
+env.run(until=5)
+
+Lab 4: Bisimulation Equivalence with Z3 Solver
+
+Question: Verify bisimulation equivalence using the Z3 Solver.
+
+!pip install z3-solver
+from z3 import *
+
+x1, x2 = Ints('x1 x2')
+solver = Solver()
+solver.add(x1 + 1 == x2 + 1)  # Both states increment similarly
+if solver.check() == sat:
+    print("The states are bisimilar.")
+else:
+    print("The states are not bisimilar.")
+    
+Lab 5: Fixed Points and Behavioral Properties
+
+Question: Calculate a fixed point for a simple example using iteration.
+
+def fixed_point(func, x0, max_iter=10):
+    for _ in range(max_iter):
+        x1 = func(x0)
+        if x1 == x0:
+            return x1
+        x0 = x1
+    return None
+
+# Example: Fixed point of f(x) = x^2 for initial value x0 = 1
+f = lambda x: x**2
+x0 = 1
+print(f"Fixed point: {fixed_point(f, x0)}")
+
+Lab 6: Modal Logic and Temporal Properties
+
+Question: Verify temporal properties using PyNuSMV.
+
+!pip install pynusmv
+from pynusmv import *
+init(["example.smv"])  # Load an SMV file
+if glob.prop_database.size > 0:
+    print(glob.prop_database.get(0).evaluate())
+else:
+    print("No properties found.")
+    
+Lab 7: CTL Model Checking
+
+Question: Write CTL properties in NuSMV and verify them.
+
+
+Similar to Lab 6, you will use PyNuSMV for CTL properties verification.
+
+Lab 8: Advanced Temporal Verification
+
+Question: Model a banking transaction system and verify fairness properties.
+
+def bank_transaction(env):
+    print(f"Transaction Initiated at {env.now}")
+    yield env.timeout(2)
+    print(f"Transaction Approved at {env.now}")
+
+env = simpy.Environment()
+env.process(bank_transaction(env))
+env.run(until=5)
+Lab 9: Real-World Protocol Verification
+
+Question: Simulate the TCP three-way handshake using Python.
+
+def tcp_handshake(env):
+    print("SYN sent")
+    yield env.timeout(1)
+    print("SYN-ACK received")
+    yield env.timeout(1)
+    print("ACK sent")
+    yield env.timeout(1)
+    print("Connection Established")
+
+env = simpy.Environment()
+env.process(tcp_handshake(env))
+env.run(until=5)
+
+Lab 10: Comprehensive System Modeling and Verification
+
+Question: Model an elevator control system in Python.
+
+def elevator(env, floors):
+    current_floor = 0
+    for target_floor in floors:
+        print(f"Elevator moving from {current_floor} to {target_floor} at {env.now}")
+        yield env.timeout(abs(target_floor - current_floor))  # Time to move
+        current_floor = target_floor
+        print(f"Elevator arrived at {current_floor} at {env.now}")
+
+env = simpy.Environment()
+floors = [0, 2, 5, 1]
+env.process(elevator(env, floors))
+env.run()
+
+
 ----------------------exp-1----------------------
 1.Write a Python program to implement a simple state transition system.
 class UserAccountStateMachine:
