@@ -32,7 +32,7 @@ if __name__ == "__main__":
     account.transition_to("Inactive")  # Invalid from Suspended
     account.transition_to("Active")
     account.transition_to("Inactive")
-    
+
 2.Design a Python program to verify simple Boolean expressions using truth tables.
  Input a Boolean expression (e.g., (A and B) or (not A)), and generate the truth table for all
 possible values of the variables.
@@ -90,9 +90,9 @@ def main():
     expected_results = get_user_expected_results(len(truth_table))
     
     if verify_results(truth_table, expected_results):
-        print("\n✅ The expression is correct as per the expected truth table.")
+        print("\n The expression is correct as per the expected truth table.")
     else:
-        print("\n❌ The expression does NOT match the expected truth table.")
+        print("\n The expression does NOT match the expected truth table.")
 
 if __name__ == "__main__":
     main()
@@ -252,3 +252,306 @@ def main():
 if __name__ == "__main__":
     main()
 
+
+
+
+---------------------------------exp-3----------------------------
+1.Write a Python program to model a client-server interaction using CCS process constructions. The
+client sends a request (req) and waits for a response (res), while the server listens for req, processes it,
+and responds with res. Simulate the sequential communication between both processes.
+
+
+import threading
+import queue
+import time
+
+def server(channel):
+    while True:
+        try:
+            request = channel.get(timeout=10)  # Timeout added to avoid hanging indefinitely
+            if request == "req":
+                print("Server: Received request (req), processing...")
+                time.sleep(2)
+                print("Server: Responding with res")
+                channel.put("res")
+        except queue.Empty:
+            print("Server: Timeout waiting for request")
+            break
+
+def client(channel):
+    print("Client: Sending request (req) to server...")
+    channel.put("req")
+    try:
+        response = channel.get(timeout=10)  # Timeout added for receiving response
+        if response == "res":
+            print("Client: Received response (res) from server")
+    except queue.Empty:
+        print("Client: Timeout waiting for response")
+
+def main():
+    channel = queue.Queue()
+    server_thread = threading.Thread(target=server, args=(channel,))
+    client_thread = threading.Thread(target=client, args=(channel,))
+    server_thread.start()
+    client_thread.start()
+
+    client_thread.join()
+    server_thread.join()
+
+    print("Client-Server communication completed.")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Process interrupted. Exiting gracefully.")
+
+2.Develop a Python program that defines two CCS processes, P and Q, executing actions a and b.
+Apply relabeling (a → b) and restriction (\{a}) to synchronize their execution. Verify whether they
+remain equivalent under strong bisimulation.
+
+    import threading
+import queue
+import time
+
+def process_P(channel):
+    print("P: Performing action a")
+    channel.put("a")
+    time.sleep(1)
+
+def process_Q(channel):
+    print("Q: Performing action b")
+    channel.put("b")
+    time.sleep(1)
+
+def relabel_action(action):
+    if action == 'a':
+        return 'b'
+    return action
+
+def restrict_action(actions, restricted_action):
+    if restricted_action in actions:
+        actions.remove(restricted_action)
+    return actions
+
+def synchronize(channel):
+    P_actions = ['a']
+    Q_actions = ['b']
+    P_actions = restrict_action(P_actions, 'a')
+    synchronized_action = relabel_action('a')
+
+    for _ in range(3):
+        P_action = channel.get()
+        Q_action = channel.get()
+        
+        if synchronized_action == Q_action:
+            print(f"Synchronization successful: {P_action} and {Q_action} are the same.")
+        else:
+            print(f"Synchronization failed: {P_action} and {Q_action} are different.")
+
+def main():
+    channel = queue.Queue()
+
+    thread_P = threading.Thread(target=process_P, args=(channel,))
+    thread_Q = threading.Thread(target=process_Q, args=(channel,))
+
+    thread_P.start()
+    thread_Q.start()
+
+    synchronize(channel)
+
+    thread_P.join()
+    thread_Q.join()
+
+if __name__ == "__main__":
+    main()
+
+3.Simulate a mobile communication system using Pi-Calculus in Python, where a parent process
+dynamically spawns a child process and exchanges messages over a dynamically created channel.
+Ensure the child process correctly receives and processes the messages.
+
+    import threading
+import queue
+import time
+
+def child_process(channel):
+    while True:
+        message = channel.get()  # Receive message from the parent process
+        if message == "exit":
+            break
+        print(f"Child Process: Received message: {message}")
+        time.sleep(1)
+
+def parent_process():
+    # Create a channel (Queue) for communication
+    channel = queue.Queue()
+
+    # Create and start the child process
+    child_thread = threading.Thread(target=child_process, args=(channel,))
+    child_thread.start()
+
+    # Parent process sends messages to the child process
+    for i in range(5):
+        message = f"Message {i + 1}"
+        print(f"Parent Process: Sending {message}")
+        channel.put(message)  # Send message to the child process
+        time.sleep(2)
+
+    # Sending exit signal to child process
+    channel.put("exit")
+
+    # Wait for the child process to finish
+    child_thread.join()
+
+    print("Parent Process: Communication completed.")
+
+if __name__ == "__main__":
+    parent_process()
+
+4.Write a Python program to define two finite-state processes in CCS and implement a bisimulation
+equivalence check between them. The program should determine whether both processes exhibit the
+same behavior using strong bisimulation principles from CWB.
+
+class Process:
+    def __init__(self, name, initial_state):
+        self.name = name
+        self.state = initial_state
+        self.transitions = {}  # Dictionary to store state transitions
+
+    def add_transition(self, state_from, action, state_to):
+        """Add a transition from state_from to state_to with a given action"""
+        if state_from not in self.transitions:
+            self.transitions[state_from] = []
+        self.transitions[state_from].append((action, state_to))
+
+    def perform_action(self, action):
+        """Perform an action and update the state"""
+        if self.state in self.transitions:
+            for trans_action, next_state in self.transitions[self.state]:
+                if trans_action == action:
+                    self.state = next_state
+                    return True
+        return False
+
+    def get_possible_actions(self):
+        """Get all possible actions that can be performed from the current state"""
+        if self.state in self.transitions:
+            return [action for action, _ in self.transitions[self.state]]
+        return []
+
+    def get_current_state(self):
+        """Get the current state of the process"""
+        return self.state
+
+
+def strong_bisimulation(p1, p2):
+    """Check if processes p1 and p2 are bisimulation equivalent"""
+    visited = set()
+
+    def bisimulate(state1, state2):
+        if (state1, state2) in visited:
+            return True
+        visited.add((state1, state2))
+
+        actions1 = p1.get_possible_actions()
+        actions2 = p2.get_possible_actions()
+
+        if set(actions1) != set(actions2):
+            return False
+
+        for action in actions1:
+            if not p1.perform_action(action):
+                continue
+            if not p2.perform_action(action):
+                continue
+            if not bisimulate(p1.get_current_state(), p2.get_current_state()):
+                return False
+
+        return True
+
+    return bisimulate(p1.get_current_state(), p2.get_current_state())
+
+
+def main():
+    # Define two processes with initial states
+    process1 = Process("P1", "S0")
+    process2 = Process("P2", "S0")
+
+    # Define transitions for process1 (P1)
+    process1.add_transition("S0", "a", "S1")
+    process1.add_transition("S1", "b", "S2")
+    process1.add_transition("S2", "a", "S0")
+
+    # Define transitions for process2 (P2)
+    process2.add_transition("S0", "a", "S1")
+    process2.add_transition("S1", "b", "S2")
+    process2.add_transition("S2", "a", "S0")
+
+    # Check if both processes are bisimulation equivalent
+    if strong_bisimulation(process1, process2):
+        print("The processes are bisimulation equivalent.")
+    else:
+        print("The processes are not bisimulation equivalent.")
+
+
+if __name__ == "__main__":
+    main()
+
+5.Design a Python program to simulate a fair resource scheduler for two processes (P and Q). Ensure
+that both processes get access to a shared resource in a round-robin manner, preventing livelock or
+starvation. Verify fairness using CCS-style modeling.
+
+import threading
+import queue
+import time
+
+# Shared resource simulation with fair round-robin scheduling
+class ResourceScheduler:
+    def __init__(self):
+        self.channel_P = queue.Queue()
+        self.channel_Q = queue.Queue()
+        self.resource = "Shared Resource"  # This is the resource we're managing
+
+    def process_P(self):
+        for _ in range(3):
+            self.channel_P.put("P wants resource")
+            print("P: Waiting for turn to access resource...")
+            self.channel_P.get()  # Wait for the signal to proceed
+            print("P: Accessing shared resource")
+            time.sleep(2)  # Simulate resource usage
+            self.channel_Q.put("Q can now access resource")  # Notify Q it's their turn
+            print("P: Released resource, giving turn to Q")
+
+    def process_Q(self):
+        for _ in range(3):
+            self.channel_Q.put("Q wants resource")
+            print("Q: Waiting for turn to access resource...")
+            self.channel_Q.get()  # Wait for the signal to proceed
+            print("Q: Accessing shared resource")
+            time.sleep(2)  # Simulate resource usage
+            self.channel_P.put("P can now access resource")  # Notify P it's their turn
+            print("Q: Released resource, giving turn to P")
+
+# Function to start the scheduler and processes
+def main():
+    scheduler = ResourceScheduler()
+
+    # Create threads for process P and Q
+    thread_P = threading.Thread(target=scheduler.process_P)
+    thread_Q = threading.Thread(target=scheduler.process_Q)
+
+    # Start both threads
+    thread_P.start()
+    thread_Q.start()
+
+    # Allow the processes to start the round-robin scheduling
+    scheduler.channel_P.put("P can now access resource")  # Start the process for P
+
+    # Wait for both threads to finish
+    thread_P.join()
+    thread_Q.join()
+
+    print("Fair resource scheduling completed without starvation.")
+
+if __name__ == "__main__":
+    main()
