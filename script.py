@@ -976,3 +976,482 @@ def main():
 if __name__ == "__main__":
     main()
 
+
+--------------------------------exp-5------------------------------
+
+1. Implement a Kripke Structure in Python and verify Computation Tree Logic (CTL)
+properties.
+class State:
+    def __init__(self, name, propositions):
+        """
+        Represents a state in the Kripke structure.
+        :param name: Name of the state
+        :param propositions: Set of atomic propositions true in this state
+        """
+        self.name = name
+        self.propositions = propositions  # Set of atomic propositions true in this state
+        self.transitions = []  # List of states this state transitions to
+
+    def add_transition(self, next_state):
+        """Add a transition to another state."""
+        self.transitions.append(next_state)
+
+    def __str__(self):
+        return f"State({self.name}, {self.propositions})"
+
+
+class TransitionSystem:
+    def __init__(self):
+        """Represents the entire transition system (Kripke structure)."""
+        self.states = {}
+
+    def add_state(self, state):
+        """Add a state to the transition system."""
+        self.states[state.name] = state
+
+    def get_state(self, state_name):
+        """Get a state by its name."""
+        return self.states.get(state_name)
+
+    def __str__(self):
+        return "\n".join([str(state) for state in self.states.values()])
+
+
+def evaluate_property(state, property_formula):
+    """
+    Recursively evaluate a CTL property on the given state.
+    """
+    if property_formula.startswith("AG"):
+        # AG p: Check if p holds in every state along every path
+        prop = property_formula[2:].strip()  # Extract property after 'AG'
+        if prop in state.propositions:
+            # Check all transitions
+            for next_state in state.transitions:
+                if not evaluate_property(next_state, property_formula):
+                    return False
+            return True
+        return False
+
+    elif property_formula.startswith("EF"):
+        # EF p: Check if p holds eventually in some state along a path
+        prop = property_formula[2:].strip()  # Extract property after 'EF'
+        if prop in state.propositions:
+            return True
+        for next_state in state.transitions:
+            if evaluate_property(next_state, property_formula):
+                return True
+        return False
+
+    elif property_formula.startswith("A"):
+        # A(p -> F q): Check if along all paths, if p holds, eventually q will hold
+        if "->" in property_formula:
+            prop1, prop2 = property_formula[1:].split("->")
+            prop1, prop2 = prop1.strip(), prop2.strip()
+            if prop1 in state.propositions:
+                return evaluate_property(state, f"EF {prop2}")
+            for next_state in state.transitions:
+                if not evaluate_property(next_state, f"A({prop1} -> F {prop2})"):
+                    return False
+            return True
+
+    # Add more CTL operators as needed (e.g., X, F, U)
+    
+    return False
+
+
+# Example usage
+if __name__ == "__main__":
+    # Create states and transitions
+    s1 = State("s1", {"p"})
+    s2 = State("s2", {"q"})
+    s3 = State("s3", {"p", "q"})
+
+    s1.add_transition(s2)
+    s2.add_transition(s3)
+
+    ts = TransitionSystem()
+    ts.add_state(s1)
+    ts.add_state(s2)
+    ts.add_state(s3)
+
+    print("Transition System:")
+    print(ts)
+
+    # Check the property AG p (Always p)
+    result = evaluate_property(s1, "AG p")
+    print(f"Does AG p hold? {'Yes' if result else 'No'}")
+
+    # Check the property EF q (Eventually q)
+    result = evaluate_property(s1, "EF q")
+    print(f"Does EF q hold? {'Yes' if result else 'No'}")
+
+    # Check the property A(p -> F q) (If p, eventually q)
+    result = evaluate_property(s1, "A(p -> F q)")
+    print(f"Does A(p -> F q) hold? {'Yes' if result else 'No'}")
+
+
+
+2.Develop a Python-based Linear Temporal Logic (LTL) model checker for verifying safety
+and liveness properties.
+
+class State:
+    def __init__(self, name, propositions):
+        """
+        Represents a state in the Kripke structure.
+        :param name: Name of the state
+        :param propositions: Set of atomic propositions true in this state
+        """
+        self.name = name
+        self.propositions = propositions  # Set of atomic propositions true in this state
+        self.transitions = []  # List of states this state transitions to
+
+    def add_transition(self, next_state):
+        """Add a transition to another state."""
+        self.transitions.append(next_state)
+
+    def __str__(self):
+        return f"State({self.name}, {self.propositions})"
+
+
+class TransitionSystem:
+    def __init__(self):
+        """Represents the entire transition system (Kripke structure)."""
+        self.states = {}
+
+    def add_state(self, state):
+        """Add a state to the transition system."""
+        self.states[state.name] = state
+
+    def get_state(self, state_name):
+        """Get a state by its name."""
+        return self.states.get(state_name)
+
+    def __str__(self):
+        return "\n".join([str(state) for state in self.states.values()])
+
+
+# LTL Model Checking Functions
+
+def check_safety_property(state, property_formula):
+    """
+    Check safety property (G p) - Safety properties always hold in every state.
+    LTL: G p means p must hold globally (always).
+    """
+    if property_formula.startswith("G"):
+        # G p: check if p holds in every state along all paths
+        prop = property_formula[2:].strip()  # Extract the property after 'G'
+        if prop in state.propositions:
+            # Check all transitions
+            for next_state in state.transitions:
+                if not check_safety_property(next_state, property_formula):
+                    return False
+            return True
+        return False
+    return False
+
+
+def check_liveness_property(state, property_formula):
+    """
+    Check liveness property (F p) - Liveness properties will eventually hold.
+    LTL: F p means p will eventually hold (eventually).
+    """
+    if property_formula.startswith("F"):
+        # F p: check if p holds eventually at some point along the path
+        prop = property_formula[2:].strip()  # Extract the property after 'F'
+        if prop in state.propositions:
+            return True
+        for next_state in state.transitions:
+            if check_liveness_property(next_state, property_formula):
+                return True
+        return False
+    return False
+
+
+def check_until_property(state, property_formula):
+    """
+    Check until property (p U q) - p holds until q becomes true.
+    LTL: p U q means p holds until q becomes true.
+    """
+    if property_formula.startswith("U"):
+        # p U q: check if p holds until q becomes true
+        left, right = property_formula[2:].split("U")
+        left = left.strip()
+        right = right.strip()
+        
+        if left in state.propositions:
+            if right in state.propositions:
+                return True
+            for next_state in state.transitions:
+                if check_until_property(next_state, property_formula):
+                    return True
+        for next_state in state.transitions:
+            if check_until_property(next_state, property_formula):
+                return True
+        return False
+    return False
+
+
+# Example usage
+if __name__ == "__main__":
+    # Create states and transitions
+    s1 = State("s1", {"p"})
+    s2 = State("s2", {"q"})
+    s3 = State("s3", {"p", "q"})
+
+    s1.add_transition(s2)
+    s2.add_transition(s3)
+    s3.add_transition(s1)  # Loop to ensure infinite executions
+
+    ts = TransitionSystem()
+    ts.add_state(s1)
+    ts.add_state(s2)
+    ts.add_state(s3)
+
+    print("Transition System:")
+    print(ts)
+
+    # Check safety property (G p) - p is always true (globally)
+    result = check_safety_property(s1, "G p")
+    print(f"Does safety property (G p) hold? {'Yes' if result else 'No'}")
+
+    # Check liveness property (F p) - p will eventually hold
+    result = check_liveness_property(s1, "F p")
+    print(f"Does liveness property (F p) hold? {'Yes' if result else 'No'}")
+
+    # Check until property (p U q) - p holds until q becomes true
+    result = check_until_property(s1, "p U q")
+    print(f"Does until property (p U q) hold? {'Yes' if result else 'No'}")
+
+
+3.Model a state transition system and check for deadlock freedom using model checking.
+
+class StateTransitionSystem:
+    def __init__(self, states, transitions):
+        """
+        Initialize the state transition system.
+        
+        :param states: A set of states
+        :param transitions: A dictionary of transitions {state: [next_state, ...]}
+        """
+        self.states = states
+        self.transitions = transitions
+
+    def get_successors(self, state):
+        """Returns the set of states reachable from the given state."""
+        return self.transitions.get(state, [])
+
+    def is_deadlock_free(self):
+        """Check if the system is deadlock-free by ensuring each state has an outgoing transition."""
+        for state in self.states:
+            if not self.get_successors(state):
+                print(f"Deadlock detected at state {state}")
+                return False
+        return True
+
+
+def main():
+    # Define the states and transitions for the system
+    states = {'s0', 's1', 's2'}
+    transitions = {
+        's0': ['s1'],
+        's1': ['s2'],
+        's2': [],  # Deadlock state: no outgoing transition
+    }
+
+    # Create the state transition system
+    sts = StateTransitionSystem(states, transitions)
+
+    # Check for deadlock freedom
+    if sts.is_deadlock_free():
+        print("The system is deadlock-free.")
+    else:
+        print("The system has deadlocks.")
+
+
+if __name__ == "__main__":
+    main()
+
+
+4.Implement a property verification tool using CTL for a given transition system.
+
+
+class State:
+    def __init__(self, name, propositions):
+        self.name = name
+        self.propositions = propositions  # Set of atomic propositions
+        self.transitions = []  # List of (next_state, label) pairs
+
+    def add_transition(self, next_state):
+        self.transitions.append(next_state)
+
+    def __str__(self):
+        return f"State({self.name}, {self.propositions})"
+
+class TransitionSystem:
+    def __init__(self):
+        self.states = {}
+
+    def add_state(self, state):
+        self.states[state.name] = state
+
+    def get_state(self, state_name):
+        return self.states.get(state_name)
+
+    def __str__(self):
+        return "\n".join([str(state) for state in self.states.values()])
+
+# Define the CTL property evaluation logic
+
+def evaluate_property(state, property_formula):
+    if property_formula.startswith("AG"):
+        # AG p: Check if p holds in every state along every path
+        prop = property_formula[2:].strip()  # Extract property after 'AG'
+        if prop in state.propositions:
+            # Check all transitions
+            for next_state in state.transitions:
+                if not evaluate_property(next_state, property_formula):
+                    return False
+            return True
+        return False
+
+    elif property_formula.startswith("EF"):
+        # EF p: Check if p holds eventually in some state along a path
+        prop = property_formula[2:].strip()  # Extract property after 'EF'
+        if prop in state.propositions:
+            return True
+        for next_state in state.transitions:
+            if evaluate_property(next_state, property_formula):
+                return True
+        return False
+
+    # Add more CTL logic for different properties as needed (e.g., A(p -> F q))
+
+    return False
+
+
+# Example usage
+if __name__ == "__main__":
+    # Create states and transitions
+    s1 = State("s1", {"p"})
+    s2 = State("s2", {"q"})
+    s3 = State("s3", {"p", "q"})
+
+    s1.add_transition(s2)
+    s2.add_transition(s3)
+
+    ts = TransitionSystem()
+    ts.add_state(s1)
+    ts.add_state(s2)
+    ts.add_state(s3)
+
+    # Check CTL properties
+    print("Transition System:")
+    print(ts)
+
+    # Check the property AG p (Always p)
+    result = evaluate_property(s1, "AG p")
+    print(f"Does AG p hold? {'Yes' if result else 'No'}")
+
+    # Check the property EF q (Eventually q)
+    result = evaluate_property(s1, "EF q")
+    print(f"Does EF q hold? {'Yes' if result else 'No'}")
+
+5.Verify fairness conditions in a concurrent system using temporal logic.
+
+class State:
+    def __init__(self, name, propositions):
+        """
+        Represents a state in the Kripke structure.
+        :param name: Name of the state
+        :param propositions: Set of atomic propositions true in this state
+        """
+        self.name = name
+        self.propositions = propositions  # Set of atomic propositions true in this state
+        self.transitions = []  # List of states this state transitions to
+
+    def add_transition(self, next_state):
+        """Add a transition to another state."""
+        self.transitions.append(next_state)
+
+    def __str__(self):
+        return f"State({self.name}, {self.propositions})"
+
+
+class TransitionSystem:
+    def __init__(self):
+        """Represents the entire transition system (Kripke structure)."""
+        self.states = {}
+
+    def add_state(self, state):
+        """Add a state to the transition system."""
+        self.states[state.name] = state
+
+    def get_state(self, state_name):
+        """Get a state by its name."""
+        return self.states.get(state_name)
+
+    def __str__(self):
+        return "\n".join([str(state) for state in self.states.values()])
+
+
+def weak_fairness(state, property_formula):
+    """
+    Weak fairness: If a process is enabled infinitely often, it must eventually happen.
+    In LTL: GF p means that p is eventually true infinitely often.
+    """
+    if property_formula.startswith("GF"):
+        # GF p means that p must eventually hold infinitely often
+        prop = property_formula[2:].strip()
+        if prop in state.propositions:
+            return True
+        for next_state in state.transitions:
+            if weak_fairness(next_state, property_formula):
+                return True
+        return False
+    return False
+
+
+def strong_fairness(state, property_formula):
+    """
+    Strong fairness: If p is enabled infinitely often, p must eventually happen.
+    In LTL: GF p means that p must eventually happen at least once.
+    """
+    if property_formula.startswith("GF"):
+        # GF p means that p must eventually hold infinitely often
+        prop = property_formula[2:].strip()
+        if prop in state.propositions:
+            return True
+        for next_state in state.transitions:
+            if strong_fairness(next_state, property_formula):
+                return True
+        return False
+    return False
+
+
+# Example usage
+if __name__ == "__main__":
+    # Create states and transitions
+    s1 = State("s1", {"p"})
+    s2 = State("s2", {"q"})
+    s3 = State("s3", {"p", "q"})
+
+    s1.add_transition(s2)
+    s2.add_transition(s3)
+    s3.add_transition(s1)  # Loop to ensure infinite executions
+
+    ts = TransitionSystem()
+    ts.add_state(s1)
+    ts.add_state(s2)
+    ts.add_state(s3)
+
+    print("Transition System:")
+    print(ts)
+
+    # Check weak fairness (GF p)
+    result = weak_fairness(s1, "GF p")
+    print(f"Does weak fairness (GF p) hold? {'Yes' if result else 'No'}")
+
+    # Check strong fairness (GF p)
+    result = strong_fairness(s1, "GF p")
+    print(f"Does strong fairness (GF p) hold? {'Yes' if result else 'No'}")
+
